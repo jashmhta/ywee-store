@@ -1,0 +1,28 @@
+{
+  "buildCommand": "pnpm build:client && pnpm build:api",
+  "outputDirectory": "dist/public",
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/[...trpc]"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/manus-storage/(.*)",
+      "dest": "/manus-storage/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/((?!api/|assets/|manus-storage/).*)",
+      "dest": "/index.html"
+    }
+  ]
+}
