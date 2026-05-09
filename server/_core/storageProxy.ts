@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import path from "path";
 import { ENV } from "./env";
 
 export function registerStorageProxy(app: Express) {
@@ -9,8 +10,14 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
-    if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-      res.status(500).send("Storage proxy not configured");
+    if (!(ENV as any).forgeApiUrl || !(ENV as any).forgeApiKey) {
+      // Serve local files from client/public/manus-storage
+      const localPath = path.resolve(process.cwd(), "client/public/manus-storage", key);
+      res.sendFile(localPath, (err) => {
+        if (err) {
+          res.status(404).send("File not found");
+        }
+      });
       return;
     }
 
