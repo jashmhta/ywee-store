@@ -10,46 +10,49 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
-    if (!(ENV as any).forgeApiUrl || !(ENV as any).forgeApiKey) {
-      // Serve local files from client/public/manus-storage
+    const serveLocal = () => {
       const localPath = path.resolve(process.cwd(), "client/public/manus-storage", key);
       res.sendFile(localPath, (err) => {
         if (err) {
           res.status(404).send("File not found");
         }
       });
+    };
+
+    if (!(ENV as any).forgeApiUrl || !(ENV as any).forgeApiKey) {
+      serveLocal();
       return;
     }
 
     try {
       const forgeUrl = new URL(
         "v1/storage/presign/get",
-        ENV.forgeApiUrl.replace(/\/+$/, "") + "/",
+        (ENV as any).forgeApiUrl.replace(/\/+$/, "") + "/",
       );
       forgeUrl.searchParams.set("path", key);
 
       const forgeResp = await fetch(forgeUrl, {
-        headers: { Authorization: `Bearer ${ENV.forgeApiKey}` },
+        headers: { Authorization: `Bearer ${(ENV as any).forgeApiKey}` },
       });
 
       if (!forgeResp.ok) {
-        const body = await forgeResp.text().catch(() => "");
-        console.error(`[StorageProxy] forge error: ${forgeResp.status} ${body}`);
-        res.status(502).send("Storage backend error");
+        console.warn(`[StorageProxy] forge error ${forgeResp.status}, falling back to local`);
+        serveLocal();
         return;
       }
 
       const { url } = (await forgeResp.json()) as { url: string };
       if (!url) {
-        res.status(502).send("Empty signed URL from backend");
+        console.warn("[StorageProxy] empty signed URL, falling back to local");
+        serveLocal();
         return;
       }
 
       res.set("Cache-Control", "no-store");
       res.redirect(307, url);
     } catch (err) {
-      console.error("[StorageProxy] failed:", err);
-      res.status(502).send("Storage proxy error");
+      console.warn("[StorageProxy] forge failed, falling back to local:", err);
+      serveLocal();
     }
   });
 }
