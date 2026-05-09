@@ -308,13 +308,11 @@ export default function Home() {
       {/* ── HERO ── */}
       <section ref={heroReveal} className="relative overflow-hidden"
         style={{ height: "calc(100svh - 88px)", minHeight: 480, maxHeight: 920 }}>
-        {/* Full-bleed video */}
-        <video
-          src="/manus-storage/ywee-hero-video.mp4"
-          autoPlay muted loop playsInline
-          poster="/manus-storage/ywee-hero-keyframe1.png"
+        {/* Full-bleed hero image */}
+        <img
+          src="/manus-storage/hero-image.png"
+          alt="Ywee hero"
           className="absolute inset-0 w-full h-full object-cover object-center sm:object-right"
-          preload="metadata"
         />
         {/* Dark gradient overlay for text readability */}
         <div className="absolute inset-0 z-[1]" style={{

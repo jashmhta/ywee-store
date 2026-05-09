@@ -16,10 +16,8 @@ import { useEffect, useRef, useState } from "react";
 
 // Critical above-the-fold assets to track
 const CRITICAL_ASSETS = [
-  // Hero video poster / keyframe
-  "/manus-storage/ywee-hero-keyframe1.png",
-  // Hero video itself (just check metadata, not full download)
-  "/manus-storage/ywee-hero-video.mp4",
+  // Hero image
+  "/manus-storage/hero-image.png",
   // Collection banners (first fold)
   "/manus-storage/ywee-collection-banner1.png",
   "/manus-storage/ywee-collection-banner2.png",
@@ -41,16 +39,6 @@ function loadImage(src: string): Promise<void> {
     img.onload = () => resolve();
     img.onerror = () => resolve(); // always resolve — don't block on 404
     img.src = src;
-  });
-}
-
-function loadVideo(src: string): Promise<void> {
-  return new Promise((resolve) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => resolve();
-    video.onerror = () => resolve();
-    video.src = src;
   });
 }
 
@@ -91,17 +79,11 @@ export default function PageLoader({ onComplete }: PageLoaderProps) {
     }, TICK_INTERVAL_MS);
 
     // Load all critical assets
-    const imageAssets = CRITICAL_ASSETS.filter(
-      (a) => !a.endsWith(".mp4") && !a.endsWith(".webm")
-    ).map(loadImage);
-    const videoAssets = CRITICAL_ASSETS.filter(
-      (a) => a.endsWith(".mp4") || a.endsWith(".webm")
-    ).map(loadVideo);
+    const imageAssets = CRITICAL_ASSETS.map(loadImage);
     const fontAsset = loadFonts();
 
     const allAssets = Promise.allSettled([
       ...imageAssets,
-      ...videoAssets,
       fontAsset,
     ]);
 
