@@ -66,7 +66,7 @@ export const appRouter = router({
 
         return {
           success: true,
-          user: { id: user.id, name: googleUser.name, email: googleUser.email },
+          user: { id: user.id, name: googleUser.name, email: googleUser.email, picture: googleUser.picture },
         };
       }),
   }),
