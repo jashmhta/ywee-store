@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Star, Leaf, Heart, Shield, RotateCcw, Plus, Minus, Play } from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register GSAP plugins
+gsap.registerPlugin(ScrollTrigger);
 import Navbar from "@/components/Navbar";
 import AuthModal from "@/components/AuthModal";
 import CartDrawer from "@/components/CartDrawer";
@@ -174,71 +179,69 @@ export default function Home() {
    const [collectionSlide, setCollectionSlide] = useState(0);
   const ageWrapperRef = useRef<HTMLDivElement>(null);
   const ageTrackRef = useRef<HTMLDivElement>(null);
-  const mobileAgeRef = useRef<HTMLDivElement>(null);
-  const mobileAgeSectionRef = useRef<HTMLElement>(null);
+  const mobileAgeWrapperRef = useRef<HTMLDivElement>(null);
+  const mobileAgeTrackRef = useRef<HTMLDivElement>(null);
 
-  // Desktop: pinned horizontal scroll for Shop by Age
+  // Desktop: GSAP pinned horizontal scroll for Shop by Age
   useEffect(() => {
     const wrapper = ageWrapperRef.current;
     const track = ageTrackRef.current;
     if (!wrapper || !track) return;
 
-    const onScroll = () => {
-      const rect = wrapper.getBoundingClientRect();
-      const wrapperHeight = wrapper.offsetHeight;
-      const viewportH = window.innerHeight;
-      const scrolled = Math.max(0, -rect.top) / (wrapperHeight - viewportH);
-      const progress = Math.min(1, Math.max(0, scrolled));
-      const trackWidth = track.scrollWidth - window.innerWidth;
-      track.style.transform = `translateX(-${progress * trackWidth}px)`;
-    };
+    const cards = track.children;
+    if (cards.length === 0) return;
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    // Calculate total scroll distance
+    const totalWidth = track.scrollWidth;
+    const viewportWidth = window.innerWidth;
+    const scrollDistance = totalWidth - viewportWidth + 64; // +64 for padding
+
+    const ctx = gsap.context(() => {
+      gsap.to(track, {
+        x: -scrollDistance,
+        ease: "none",
+        scrollTrigger: {
+          trigger: wrapper,
+          start: "top top",
+          end: () => `+=${scrollDistance}`,
+          pin: true,
+          scrub: 1,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+    }, wrapper);
+
+    return () => ctx.revert();
   }, []);
 
-  // Mobile: auto-scroll Shop by Age cards when in view
+  // Mobile: GSAP pinned horizontal scroll for Shop by Age
   useEffect(() => {
-    const track = mobileAgeRef.current;
-    const section = mobileAgeSectionRef.current;
-    if (!track || !section) return;
+    const wrapper = mobileAgeWrapperRef.current;
+    const track = mobileAgeTrackRef.current;
+    if (!wrapper || !track) return;
 
-    let animId: number | null = null;
-    let userInteracted = false;
+    const totalWidth = track.scrollWidth;
+    const viewportWidth = window.innerWidth;
+    const scrollDistance = totalWidth - viewportWidth + 32;
 
-    const autoScroll = () => {
-      if (userInteracted) return;
-      const maxScroll = track.scrollWidth - track.clientWidth;
-      if (track.scrollLeft >= maxScroll - 2) return;
-      track.scrollLeft += 0.8;
-      animId = requestAnimationFrame(autoScroll);
-    };
+    const ctx = gsap.context(() => {
+      gsap.to(track, {
+        x: -scrollDistance,
+        ease: "none",
+        scrollTrigger: {
+          trigger: wrapper,
+          start: "top top",
+          end: () => `+=${scrollDistance}`,
+          pin: true,
+          scrub: 1,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+    }, wrapper);
 
-    const stop = () => {
-      userInteracted = true;
-      if (animId) cancelAnimationFrame(animId);
-    };
-
-    track.addEventListener("touchstart", stop, { passive: true });
-    track.addEventListener("touchmove", stop, { passive: true });
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !userInteracted) {
-          animId = requestAnimationFrame(autoScroll);
-        } else {
-          if (animId) cancelAnimationFrame(animId);
-        }
-      },
-      { threshold: 0.3 }
-    );
-    observer.observe(section);
-
-    return () => {
-      observer.disconnect();
-      if (animId) cancelAnimationFrame(animId);
-    };
+    return () => ctx.revert();
   }, []);
 
 
@@ -306,13 +309,19 @@ export default function Home() {
       <Navbar onAuthOpen={() => setAuthOpen(true)} onCartOpen={() => setCartOpen(true)} />
 
       {/* ── HERO ── */}
-      <section ref={heroReveal} className="relative overflow-hidden"
+      <section ref={heroReveal}
+        className="relative overflow-hidden"
         style={{ height: "calc(100svh - 88px)", minHeight: 480, maxHeight: 920 }}>
-        {/* Full-bleed hero image */}
+        {/* Full-bleed hero image — mobile portrait / desktop original */}
+        <img
+          src="/manus-storage/heromobile.png"
+          alt="Ywee hero"
+          className="absolute inset-0 w-full h-full object-cover object-center sm:hidden"
+        />
         <img
           src="/manus-storage/hero-image.png"
           alt="Ywee hero"
-          className="absolute inset-0 w-full h-full object-cover object-center sm:object-right"
+          className="absolute inset-0 w-full h-full object-cover object-center hidden sm:block"
         />
         {/* Dark gradient overlay for text readability */}
         <div className="absolute inset-0 z-[1]" style={{
@@ -424,29 +433,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── SHOP BY AGE (Video Cards) ── */}
-      {/* Mobile: full-width snap scroll, one card at a time */}
-      <section ref={mobileAgeSectionRef} className="sm:hidden pt-10 pb-6">
-        <div className="container mb-6">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-2"
-            style={{ color: "var(--ywee-sage)" }}>Shop by Age</p>
-          <h2 className="text-3xl font-bold"
-            style={{ fontFamily: "'Playfair Display', serif" }}>
-            Find the perfect fit
-          </h2>
+      {/* ── SHOP BY AGE (Mobile) ── */}
+      {/* Mobile: GSAP pinned horizontal scroll */}
+      <div id="shop" ref={mobileAgeWrapperRef} className="sm:hidden relative">
+        <div className="h-[100dvh] overflow-hidden flex flex-col justify-center">
+          <div className="container mb-5 px-4">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-2"
+              style={{ color: "var(--ywee-sage)" }}>Shop by Age</p>
+            <h2 className="text-2xl font-bold"
+              style={{ fontFamily: "'Playfair Display', serif" }}>
+              Find the perfect fit
+            </h2>
+          </div>
+          <div ref={mobileAgeTrackRef} className="flex gap-3 pl-4 pr-4 will-change-transform"
+            style={{ width: "max-content" }}>
+            {CATEGORIES.map((cat) => (
+              <div key={cat.id} className="shrink-0 w-[78vw]">
+                <VideoCard cat={cat} />
+              </div>
+            ))}
+          </div>
         </div>
-        <div ref={mobileAgeRef} className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-4">
-          {CATEGORIES.map((cat) => (
-            <div key={cat.id} className="snap-center shrink-0 w-[calc(100vw-2rem)]">
-              <VideoCard cat={cat} />
-            </div>
-          ))}
-        </div>
-      </section>
+      </div>
 
-      {/* Desktop: awwward-style pinned horizontal scroll */}
-      <div id="shop" ref={ageWrapperRef} className="hidden sm:block relative" style={{ height: "300vh" }}>
-        <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
+      {/* Desktop: GSAP pinned horizontal scroll */}
+      <div id="shop" ref={ageWrapperRef} className="hidden sm:block relative">
+        <div className="h-screen overflow-hidden flex flex-col justify-center">
           <div className="container mb-8">
             <p className="text-xs font-semibold uppercase tracking-widest mb-2"
               style={{ color: "var(--ywee-sage)" }}>Shop by Age</p>
@@ -906,7 +918,7 @@ export default function Home() {
           {/* Feature cards with hover animations */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
             {[
-              { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M6 2v20M18 2v20M6 2c0 4 2 6 6 6s6-2 6-6M6 22c0-4 2-6 6-6s6 2 6 6" /></svg>, title: 'Stretch Denim', desc: 'Cotton-Lycra blend that moves with her', bg: '#c2185b', color: '#fce4ec' },
+              { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M6 2v20M18 2v20M6 2c0 4 2 6 6 6s6-2 6-6M6 22c0-4 2-6 6-6s6 2 6 6" /></svg>, title: 'Stretch Denim', desc: 'Cotton-Lycra blend that moves with her', bg: '#2B4C7E', color: '#E8EEF7' },
               { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><circle cx="12" cy="12" r="3" /><path d="M12 2a7 7 0 0 1 0 14 3.5 3.5 0 0 0 0 7 7 7 0 0 1 0-14 3.5 3.5 0 0 0 0-7z" /><path d="M12 22a7 7 0 0 1 0-14 3.5 3.5 0 0 0 0-7" /></svg>, title: 'Fun Prints', desc: 'Floral, cartoon & solid styles', bg: 'var(--ywee-sage-light)', color: 'var(--ywee-sage)' },
               { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M12 2l1.5 5.5L19 9l-5.5 1.5L12 16l-1.5-5.5L5 9l5.5-1.5L12 2z" /></svg>, title: 'Ages 1–14', desc: 'Perfect fit for every stage of growing', bg: 'var(--ywee-sky)', color: 'var(--ywee-brown)' },
               { icon: <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7"><rect x="2" y="6" width="20" height="12" rx="1" fill="currentColor" opacity="0.15" /><rect x="2" y="6" width="20" height="4" fill="#FF9933" /><rect x="2" y="10" width="20" height="4" fill="#fff" /><rect x="2" y="14" width="20" height="4" fill="#138808" /><circle cx="12" cy="12" r="2" fill="#000080" /></svg>, title: 'Made in India', desc: 'Quality craftsmanship, affordable price', bg: 'var(--ywee-sand)', color: 'var(--ywee-terracotta)' },

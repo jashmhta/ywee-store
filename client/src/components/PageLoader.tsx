@@ -16,8 +16,9 @@ import { useEffect, useRef, useState } from "react";
 
 // Critical above-the-fold assets to track
 const CRITICAL_ASSETS = [
-  // Hero image
+  // Hero images
   "/manus-storage/hero-image.png",
+  "/manus-storage/heromobile.png",
   // Collection banners (first fold)
   "/manus-storage/ywee-collection-banner1.png",
   "/manus-storage/ywee-collection-banner2.png",
