@@ -12,29 +12,25 @@ interface MobileBottomNavProps {
 export default function MobileBottomNav({ onCartOpen, onAuthOpen }: MobileBottomNavProps) {
   const { totalItems } = useCart();
   const { count: wishlistCount } = useWishlist();
-  const [hidden, setHidden] = useState(false);
-  const lastScrollY = useRef(0);
-  const ticking = useRef(false);
+  const [visible, setVisible] = useState(true);
+  const [pastHero, setPastHero] = useState(false);
+  const scrollTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  // Show when scroll stops, hide while scrolling
   useEffect(() => {
     const onScroll = () => {
-      if (!ticking.current) {
-        requestAnimationFrame(() => {
-          const currentY = window.scrollY;
-          // Hide when scrolling down, show when scrolling up
-          if (currentY > 80) {
-            setHidden(currentY > lastScrollY.current);
-          } else {
-            setHidden(false);
-          }
-          lastScrollY.current = currentY;
-          ticking.current = false;
-        });
-        ticking.current = true;
-      }
+      setPastHero(window.scrollY > 20);
+      setVisible(false);
+      clearTimeout(scrollTimer.current);
+      scrollTimer.current = setTimeout(() => {
+        setVisible(true);
+      }, 150);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(scrollTimer.current);
+    };
   }, []);
 
   const items = [
@@ -47,13 +43,14 @@ export default function MobileBottomNav({ onCartOpen, onAuthOpen }: MobileBottom
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-[90] border-t bottom-nav-safe transition-transform duration-300"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-[90] border-t bottom-nav-safe transition-all duration-300"
       style={{
-        background: "var(--nav-bg)",
-        backdropFilter: "blur(20px) saturate(1.5)",
-        WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+        background: pastHero ? "var(--nav-bg)" : "var(--card)",
+        backdropFilter: pastHero ? "blur(20px) saturate(1.5)" : "none",
+        WebkitBackdropFilter: pastHero ? "blur(20px) saturate(1.5)" : "none",
         borderColor: "var(--border)",
-        transform: hidden ? "translateY(100%)" : "translateY(0)",
+        transform: visible ? "translateY(0)" : "translateY(100%)",
+        opacity: visible ? 1 : 0,
       }}
     >
       <div className="flex items-center justify-around px-2 pt-2 pb-1">

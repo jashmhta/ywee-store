@@ -108,7 +108,7 @@ function VideoCard({ cat }: { cat: (typeof CATEGORIES)[number] }) {
   }, []);
 
   return (
-    <div ref={cardRef} className="video-card relative shrink-0 w-full sm:w-72 h-[80vw] sm:h-96 max-h-[500px] rounded-2xl overflow-hidden cursor-pointer group"
+    <div ref={cardRef} className="video-card relative shrink-0 w-full sm:w-72 h-[70vw] sm:h-96 max-h-[500px] rounded-2xl overflow-hidden cursor-pointer group"
       style={{ background: "var(--secondary)" }}>
       {cat.video ? (
         <video
@@ -174,8 +174,10 @@ export default function Home() {
    const [collectionSlide, setCollectionSlide] = useState(0);
   const ageWrapperRef = useRef<HTMLDivElement>(null);
   const ageTrackRef = useRef<HTMLDivElement>(null);
+  const mobileAgeRef = useRef<HTMLDivElement>(null);
+  const mobileAgeSectionRef = useRef<HTMLElement>(null);
 
-  // Awwward-style pinned horizontal scroll for Shop by Age
+  // Desktop: pinned horizontal scroll for Shop by Age
   useEffect(() => {
     const wrapper = ageWrapperRef.current;
     const track = ageTrackRef.current;
@@ -195,6 +197,50 @@ export default function Home() {
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Mobile: auto-scroll Shop by Age cards when in view
+  useEffect(() => {
+    const track = mobileAgeRef.current;
+    const section = mobileAgeSectionRef.current;
+    if (!track || !section) return;
+
+    let animId: number | null = null;
+    let userInteracted = false;
+
+    const autoScroll = () => {
+      if (userInteracted) return;
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      if (track.scrollLeft >= maxScroll - 2) return;
+      track.scrollLeft += 0.8;
+      animId = requestAnimationFrame(autoScroll);
+    };
+
+    const stop = () => {
+      userInteracted = true;
+      if (animId) cancelAnimationFrame(animId);
+    };
+
+    track.addEventListener("touchstart", stop, { passive: true });
+    track.addEventListener("touchmove", stop, { passive: true });
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !userInteracted) {
+          animId = requestAnimationFrame(autoScroll);
+        } else {
+          if (animId) cancelAnimationFrame(animId);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(section);
+
+    return () => {
+      observer.disconnect();
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, []);
+
 
   // Auto-rotate collection every 4s
   useEffect(() => {
@@ -381,8 +427,8 @@ export default function Home() {
       </section>
 
       {/* ── SHOP BY AGE (Video Cards) ── */}
-      {/* Mobile: snap scroll */}
-      <section className="sm:hidden pt-10 pb-6">
+      {/* Mobile: full-width snap scroll, one card at a time */}
+      <section ref={mobileAgeSectionRef} className="sm:hidden pt-10 pb-6">
         <div className="container mb-6">
           <p className="text-xs font-semibold uppercase tracking-widest mb-2"
             style={{ color: "var(--ywee-sage)" }}>Shop by Age</p>
@@ -391,14 +437,12 @@ export default function Home() {
             Find the perfect fit
           </h2>
         </div>
-        <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory" style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 8 }}>
-          <div className="flex" style={{ width: `${CATEGORIES.length * 100}vw` }}>
-            {CATEGORIES.map((cat) => (
-              <div key={cat.id} className="snap-center snap-always flex-shrink-0" style={{ width: '100vw', paddingLeft: 24, paddingRight: 24 }}>
-                <VideoCard cat={cat} />
-              </div>
-            ))}
-          </div>
+        <div ref={mobileAgeRef} className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-4">
+          {CATEGORIES.map((cat) => (
+            <div key={cat.id} className="snap-center shrink-0 w-[calc(100vw-2rem)]">
+              <VideoCard cat={cat} />
+            </div>
+          ))}
         </div>
       </section>
 
