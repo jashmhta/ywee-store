@@ -1,0 +1,66 @@
+functionsDirectory = "/home/ubuntu/y2/ywee-store/ywee-store/netlify/functions"
+functionsDirectoryOrigin = "default"
+redirectsOrigin = "config"
+plugins = []
+headers = []
+
+[build]
+publish = "/home/ubuntu/y2/ywee-store/ywee-store/dist/public"
+publishOrigin = "config"
+commandOrigin = "config"
+command = "pnpm build:client"
+functions = "/home/ubuntu/y2/ywee-store/ywee-store/netlify/functions"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[functions]
+
+[functions."*"]
+
+[[redirects]]
+from = "/api/trpc/*"
+to = "/.netlify/functions/trpc/:splat"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/manus-storage/*"
+to = "/manus-storage/:splat"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]

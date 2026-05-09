@@ -1,0 +1,18 @@
+[build]
+  command = "pnpm build:client"
+  publish = "dist/public"
+
+[[redirects]]
+  from = "/api/trpc/*"
+  to = "/.netlify/functions/trpc/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/manus-storage/*"
+  to = "/manus-storage/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
